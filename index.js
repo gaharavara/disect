@@ -27,19 +27,9 @@ const ethAdapter_ceo = new EthersAdapter({ ethers, signer: ceo_signer });
 const ethAdapter_cto = new EthersAdapter({ ethers, signer: cto_signer });
 const ethAdapter_advisor = new EthersAdapter({ ethers, signer: advisor_signer });
 
-/*
-Create safe basically creates a multisig with the given addresses
-v1:
-invoker ( ethAdapter ): the person who is creating the safe
-owners: list of members of the multisig
-*/
-async function createSafe(invoker, owners) {
-
-}
-
-async function main() {
+async function getContractNetworks(invoker) {
   // get chain id
-  const id = await ethAdapter_ceo.getChainId();
+  const id = await invoker.getChainId();
   const contractNetworks = {
     [id]: {
       // 3 smart contracts with which the safe will interact
@@ -48,23 +38,49 @@ async function main() {
       safeProxyFactoryAddress: process.env.SAFE_PROXY_FACTORY_ADDRESS,
     }
   }
+
+  return contractNetworks;
+}
+
+/*
+Create safe basically creates a multisig with the given addresses
+v1:
+args:
+invoker ( ethAdapter ): the person who is creating the safe
+owners: list of members of the multisig
+contractNetworks: { chainId: { smart contracts the safe will interact with } }
+returns:
+object of deployed safe
+we can call deployedSafe.*(getAddress, getBalance, createTransaction, ...)
+*/
+async function createSafe(invoker, owners, contractNetworks) {
   // create the safe factory
   const safeFactory = await SafeFactory.create({
-    ethAdapter: ethAdapter_ceo,
+    ethAdapter: invoker,
     contractNetworks: contractNetworks,
   });
 
   // create a safe using safe factory
   // addresses of the members of the safe
-  const owners = [ceo, cto, meme_artist, solidity_engineer, advisor];
   // minimum amount of signatures required to approve transactions for this safe
-  const threshold = 2;
+  const threshold = owners.length;
   const safeAccountConfig = {
-    owners: owners,
-    threshold: threshold,
+    owners,
+    // TODO (Remove): Hardcoding to 2 for testing purpose
+    threshold: 2,
   };
   // deploy a safe
-  const safeSdk_ceo = await safeFactory.deploySafe({safeAccountConfig});
+  return await safeFactory.deploySafe({safeAccountConfig});
+}
+
+async function main() {
+  // shared with everyone who wants to get the Safe object
+  const contractNetworks = await getContractNetworks(ethAdapter_ceo);
+  const safeSdk_ceo = await createSafe(
+    ethAdapter_ceo,
+    [ceo, cto, meme_artist, solidity_engineer, advisor],
+    contractNetworks,
+  );
   const treasury = safeSdk_ceo.getAddress();
   const ten_ethers = ethers.utils.parseUnits("10", "ether").toHexString();
   const trx_params = [{
