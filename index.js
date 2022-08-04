@@ -73,6 +73,18 @@ async function createSafe(invoker, owners, contractNetworks) {
   return await safeFactory.deploySafe({safeAccountConfig});
 }
 
+/*
+returns:
+safeSdk for the invoker
+*/
+async function getSafeSdk(invokerAdapter, deployedSafeAddress, contractNetworks) {
+  return await Safe.create({
+    ethAdapter: invokerAdapter,
+    safeAddress: deployedSafeAddress,
+    contractNetworks: contractNetworks,
+  });
+}
+
 async function main() {
   // shared with everyone who wants to get the Safe object
   const contractNetworks = await getContractNetworks(ethAdapter_ceo);
@@ -113,11 +125,7 @@ async function main() {
 
   const hashCTO = await safeSdk_ceo.getTransactionHash(safeTransaction);
 
-  const safeSdk_cto = await Safe.create({
-    ethAdapter: ethAdapter_cto,
-    safeAddress: treasury,
-    contractNetworks: contractNetworks,
-  });
+  const safeSdk_cto = await getSafeSdk(ethAdapter_cto, treasury, contractNetworks);
 
   const safeTransactionCTO = await safeSdk_cto.createTransaction(transaction);
   const txResponse_cto = await safeSdk_cto.executeTransaction(safeTransactionCTO);
