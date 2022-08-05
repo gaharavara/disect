@@ -85,6 +85,17 @@ async function getSafeSdk(invokerAdapter, deployedSafeAddress, contractNetworks)
   });
 }
 
+function generateTransaction(to, opts) {
+  // This is to transfer some money to an account
+  // TODO: Modify to include transaction wrt a contract
+  return {
+    to,
+    // contract parameters
+    data: opts.data,
+    value: opts.value,
+  };
+}
+
 async function main() {
   // shared with everyone who wants to get the Safe object
   const contractNetworks = await getContractNetworks(ethAdapter_ceo);
@@ -94,13 +105,13 @@ async function main() {
     contractNetworks,
   );
   const treasury = safeSdk_ceo.getAddress();
+
   const ten_ethers = ethers.utils.parseUnits("10", "ether").toHexString();
   const trx_params = [{
     from: investor,
     to: treasury,
     value: ten_ethers,
   }];
-
   // Investor sends money to the created safe / treasury using `eth_sendTransaction` RPC method
   await provider.send("eth_sendTransaction", trx_params);
   console.log("Fundraising.");
@@ -108,18 +119,21 @@ async function main() {
   // check balance of the safe
   const balance = await safeSdk_ceo.getBalance();
   console.log(`Initial balance of the treasury: ${ethers.utils.formatUnits(balance, "ether")} ETH`);
-
   const three_ethers = ethers.utils.parseUnits("3", "ether").toHexString();
+  const transaction = generateTransaction(
+    yacht_shop,
+    {
+      // replace this with contract parameters
+      data: "0x",
+      value: three_ethers,
+    }
+  );
 
-  const transaction = {
-    to: yacht_shop,
-    // replace this with contract parameters
-    data: "0x",
-    value: three_ethers,
-  };
-
+  // create a transaction
   const safeTransaction = await safeSdk_ceo.createTransaction(transaction);
+  // get hash of the created transaction
   const hash = await safeSdk_ceo.getTransactionHash(safeTransaction);
+  // approve the hash of the created transactions
   const txResponse = await safeSdk_ceo.approveTransactionHash(hash);
   await txResponse.transactionResponse?.wait();
 
