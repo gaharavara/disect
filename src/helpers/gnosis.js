@@ -1,33 +1,8 @@
-require("dotenv").config();
 const { SafeFactory, SafeAccountConfig, ContractNetworksConfig } = require("@gnosis.pm/safe-core-sdk");
 const Safe = require("@gnosis.pm/safe-core-sdk")["default"];
-
-const ceo = process.env.ACCOUNT_1;
-const cto = process.env.ACCOUNT_2;
-const meme_artist = process.env.ACCOUNT_3;
-const solidity_engineer = process.env.ACCOUNT_4;
-const advisor = process.env.ACCOUNT_5;
-const investor = process.env.ACCOUNT_6;
-const yacht_shop = process.env.ACCOUNT_7;
-
 const { ethers } = require("ethers");
 
-// A provider is an Ethereum connection object
-const provider = new ethers.providers.JsonRpcProvider();
-
-const ceo_signer = provider.getSigner(ceo);
-const cto_signer = provider.getSigner(cto);
-const advisor_signer = provider.getSigner(advisor);
-
-// The Gnosis safe contract works with the ethers.js library
-// so we need an adapter that works with ether.js
-// We need an adapter for every signer
-const EthersAdapter = require("@gnosis.pm/safe-ethers-lib")["default"];
-const ethAdapter_ceo = new EthersAdapter({ ethers, signer: ceo_signer });
-const ethAdapter_cto = new EthersAdapter({ ethers, signer: cto_signer });
-const ethAdapter_advisor = new EthersAdapter({ ethers, signer: advisor_signer });
-
-async function getContractNetworks(invoker) {
+export async function getContractNetworks(invoker) {
   // get chain id
   const id = await invoker.getChainId();
   const contractNetworks = {
@@ -53,7 +28,8 @@ returns:
 object of deployed safe
 we can call deployedSafe.*(getAddress, getBalance, createTransaction, ...)
 */
-async function createSafe(invoker, owners, contractNetworks) {
+export async function createSafe(invoker, owners, contractNetworks) {
+  console.log(`${JSON.stringify(invoker, null, 2)} is creating a safe with owners: ${JSON.stringify(owners, null, 2)} on contractNetworks: ${JSON.stringify(contractNetworks, null, 2)}`);
   // create the safe factory
   const safeFactory = await SafeFactory.create({
     ethAdapter: invoker,
@@ -77,7 +53,7 @@ async function createSafe(invoker, owners, contractNetworks) {
 returns:
 safeSdk for the invoker
 */
-async function getSafeSdk(invokerAdapter, deployedSafeAddress, contractNetworks) {
+export async function getSafeSdk(invokerAdapter, deployedSafeAddress, contractNetworks) {
   return await Safe.create({
     ethAdapter: invokerAdapter,
     safeAddress: deployedSafeAddress,
@@ -96,7 +72,29 @@ function generateTransaction(to, opts) {
   };
 }
 
-async function main() {
+export async function main() {
+  const ceo = process.env.ACCOUNT_1;
+  const cto = process.env.ACCOUNT_2;
+  const meme_artist = process.env.ACCOUNT_3;
+  const solidity_engineer = process.env.ACCOUNT_4;
+  const advisor = process.env.ACCOUNT_5;
+  const investor = process.env.ACCOUNT_6;
+  const yacht_shop = process.env.ACCOUNT_7;
+  
+  // A provider is an Ethereum connection object
+  const provider = new ethers.providers.JsonRpcProvider();
+  
+  const ceo_signer = provider.getSigner(ceo);
+  const cto_signer = provider.getSigner(cto);
+  const advisor_signer = provider.getSigner(advisor);
+  
+  // The Gnosis safe contract works with the ethers.js library
+  // so we need an adapter that works with ether.js
+  // We need an adapter for every signer
+  const EthersAdapter = require("@gnosis.pm/safe-ethers-lib")["default"];
+  const ethAdapter_ceo = new EthersAdapter({ ethers, signer: ceo_signer });
+  const ethAdapter_cto = new EthersAdapter({ ethers, signer: cto_signer });
+  const ethAdapter_advisor = new EthersAdapter({ ethers, signer: advisor_signer });
   // shared with everyone who wants to get the Safe object
   const contractNetworks = await getContractNetworks(ethAdapter_ceo);
   const safeSdk_ceo = await createSafe(
@@ -150,10 +148,3 @@ async function main() {
   const afterBalance = await safeSdk_ceo.getBalance();
   console.log(`The final balance of the treasury: ${ethers.utils.formatUnits(afterBalance, "ether")} ETH`);
 }
-
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.log(err);
-    process.exit(1);
-  });
