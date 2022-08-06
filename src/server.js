@@ -28,7 +28,11 @@ main()
   });
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.render("base", );
+});
+
+app.get('/disectV1', (req, res) => {
+  res.render('demo');
 });
 
 app.listen(process.env.PORT, () => {
